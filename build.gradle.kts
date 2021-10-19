@@ -7,6 +7,7 @@ plugins {
     kotlin("multiplatform")
     id("com.epam.drill.gradle.plugin.kni")
     id("com.github.hierynomus.license")
+    `maven-publish`
 }
 
 repositories {
@@ -27,9 +28,7 @@ kotlin {
     targets {
         nativeTargets.addAll(
             sequenceOf(
-                mingwX64 {
-                    binaries.all { linkerOpts("-lpsapi", "-lwsock32", "-lws2_32", "-lmswsock") }
-                },
+                mingwX64(),
                 linuxX64(),
 //                macosX64()
             )
@@ -46,6 +45,8 @@ kotlin {
                 dependencies {
                     //TODO Compile only ?
                     implementation("com.alibaba:transmittable-thread-local:$ttlVersion")
+                    implementation("com.epam.drill.knasm:knasm:$knasmVersion")
+                    implementation("com.epam.drill.kni:runtime:$kniVersion")
                 }
             }
         }
@@ -54,7 +55,6 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation("com.epam.drill.knasm:knasm:$knasmVersion")
-                implementation("com.epam.drill.kni:runtime:$kniVersion")
                 implementation("com.epam.drill.logger:logger:$drillLogger") {
                     //TODO EPMDJ-8703 exclude in logger
                     exclude("org.slf4j")
@@ -70,7 +70,6 @@ kotlin {
                 implementation("com.epam.drill.knasm:knasm:$knasmVersion")
                 implementation("com.epam.drill.kni:runtime:$kniVersion")
             }
-
         }
 
         val linuxX64Main by getting {
