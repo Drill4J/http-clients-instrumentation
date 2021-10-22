@@ -1,0 +1,8 @@
+build/
+**/.idea/*
+!/.idea/codeStyles
+!/.idea/fileTemplates
+/build-cache/
+.gradle/
+src/*/kotlin/kni/
+src/*/kotlin/gen/
