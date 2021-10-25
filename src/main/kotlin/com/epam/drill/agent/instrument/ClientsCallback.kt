@@ -39,8 +39,6 @@ object ClientsCallback {
     fun storeHeaders(headers: Map<String, String>) = _outputCallback.value.invoke(headers)
 
     fun isSendCondition(): Boolean = getHeaders().run {
-        if (isEmpty() && get(SESSION_ID_HEADER) == null)
-            return false
-        return any { it.key.startsWith(DRILL_HEADER_PREFIX) && it.key != SESSION_ID_HEADER }
+        return isNotEmpty() && get(SESSION_ID_HEADER) != null && any { it.key.startsWith(DRILL_HEADER_PREFIX) && it.key != SESSION_ID_HEADER }
     }
 }

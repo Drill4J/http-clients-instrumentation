@@ -40,6 +40,17 @@ object JavaHttpUrlConnection : ITransformer {
                     """
                 )
             }
+            ctClass.getDeclaredMethod("getContent").insertAfter("""
+                    java.util.Map allHeaders = new java.util.HashMap();
+                    java.util.Iterator iterator = getHeaderFields().keySet().iterator();
+                    while (iterator.hasNext()) { 
+                        String key = (String) iterator.next();
+                        String value = getHeaderField(key);
+                        allHeaders.put(key, value);
+                    }
+                    ${ClientsCallback::class.qualifiedName}.INSTANCE.${ClientsCallback::storeHeaders.name}(allHeaders);
+            """.trimIndent())
+
         }.onFailure {
             logger.error(it) { "Error while instrumenting the class ${ctClass.name}" }
         }
