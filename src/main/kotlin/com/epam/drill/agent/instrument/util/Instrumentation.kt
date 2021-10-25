@@ -20,11 +20,11 @@ import java.io.*
 import java.security.*
 
 
-internal inline fun addAndTransform(
+inline fun addAndTransform(
     classBytes: ByteArray,
     loader: Any?,
     protectionDomain: Any?,
-    function: (CtClass, ClassPool, ClassLoader?, ProtectionDomain?) -> ByteArray?, //TODO noinline ???
+    function: (CtClass, ClassPool, ClassLoader?, ProtectionDomain?) -> ByteArray?,
 ): ByteArray? {
     val classPool = ClassPool(true)
     if (loader == null) {

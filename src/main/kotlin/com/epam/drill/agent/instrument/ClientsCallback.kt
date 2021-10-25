@@ -22,23 +22,30 @@ object ClientsCallback {
     private const val DRILL_HEADER_PREFIX = "drill-"
     private const val SESSION_ID_HEADER = "${DRILL_HEADER_PREFIX}session-id"
 
-    private val _inputCallback = atomic<(() -> Map<String, String>)> { emptyMap() }
-    private val _outputCallback = atomic<((Map<String, String>) -> Unit)> { }
+    private val _requestCallback = atomic<(() -> Map<String, String>)?>(null)
+    private val _responceCallback = atomic<((Map<String, String>) -> Unit)?>(null)
 
-    fun initInputCallback(callback: () -> Map<String, String>) {
-        _inputCallback.value = callback
+    fun initRequestCallback(callback: () -> Map<String, String>) {
+        _requestCallback.value = callback
     }
 
-    fun initOutputCallback(callback: (Map<String, String>) -> Unit) {
-        _outputCallback.value = callback
+    fun initResponseCallback(callback: (Map<String, String>) -> Unit) {
+        _responceCallback.value = callback
     }
 
 
-    fun getHeaders(): Map<String, String> = _inputCallback.value.invoke()
+    fun getHeaders(): Map<String, String> = _requestCallback.value?.invoke() ?: emptyMap()
 
-    fun storeHeaders(headers: Map<String, String>) = _outputCallback.value.invoke(headers)
+    fun storeHeaders(headers: Map<String, String>) = _responceCallback.value?.invoke(headers)
 
+    fun isRequestCallbackSet() = _requestCallback.value != null
+
+    fun isResponseCallbackSet() = _responceCallback.value != null
+
+    //todo
     fun isSendCondition(): Boolean = getHeaders().run {
-        return isNotEmpty() && get(SESSION_ID_HEADER) != null && any { it.key.startsWith(DRILL_HEADER_PREFIX) && it.key != SESSION_ID_HEADER }
+        return isRequestCallbackSet() && isNotEmpty() && get(SESSION_ID_HEADER) != null && any {
+            it.key.startsWith(DRILL_HEADER_PREFIX) && it.key != SESSION_ID_HEADER
+        }
     }
 }

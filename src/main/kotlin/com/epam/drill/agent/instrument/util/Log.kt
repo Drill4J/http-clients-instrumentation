@@ -13,25 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.alibaba.ttl.threadpool.agent.internal.javassist.*
-import org.objectweb.asm.*
-import java.security.*
+package com.epam.drill.agent.instrument.util
 
-interface ITransformer {
+import com.epam.drill.logger.Logging
 
-    fun permit(classReader: ClassReader): Boolean
-
-    fun transform(
-        className: String,
-        classFileBuffer: ByteArray,
-        loader: Any?,
-        protectionDomain: Any?,
-    ): ByteArray?
-
-    fun transform(
-        ctClass: CtClass,
-        pool: ClassPool,
-        classLoader: ClassLoader?,
-        protectionDomain: ProtectionDomain?,
-    ): ByteArray?
+object Log {
+    private val logger = Logging.logger("Headers injector")
+    fun injectHeaderLog(headers: Map<String, String>) {
+        logger.trace { "Adding headers: $headers" }
+    }
 }

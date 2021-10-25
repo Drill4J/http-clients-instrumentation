@@ -11,8 +11,7 @@ val ttlVersion: String by extra
 val atomicfuVersion: String by extra
 val drillLoggerVersion: String by extra
 val scriptUrl: String by extra
-
-
+val knasmVersion: String by extra
 
 apply(from = rootProject.uri("$scriptUrl/git-version.gradle.kts"))
 
@@ -28,7 +27,7 @@ dependencies {
     implementation("com.alibaba:transmittable-thread-local:$ttlVersion")
     implementation("com.epam.drill.logger:logger:$drillLoggerVersion")
     implementation("org.jetbrains.kotlinx:atomicfu:$atomicfuVersion")
-
+    implementation("com.epam.drill.knasm:knasm:$knasmVersion")
 }
 
 val licenseFormatSettings by tasks.registering(LicenseFormat::class) {
