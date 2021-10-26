@@ -20,11 +20,11 @@ import java.io.*
 import java.security.*
 
 
-inline fun addAndTransform(
+inline fun createAndTransform(
     classBytes: ByteArray,
     loader: Any?,
     protectionDomain: Any?,
-    function: (CtClass, ClassPool, ClassLoader?, ProtectionDomain?) -> ByteArray?,
+    transformer: (CtClass, ClassPool, ClassLoader?, ProtectionDomain?) -> ByteArray?,
 ): ByteArray? {
     val classPool = ClassPool(true)
     if (loader == null) {
@@ -36,5 +36,5 @@ inline fun addAndTransform(
     val clazz = classPool.makeClass(ByteArrayInputStream(classBytes), false)
     clazz.defrost()
 
-    return function(clazz, classPool, loader as? ClassLoader, protectionDomain as? ProtectionDomain)
+    return transformer(clazz, classPool, loader as? ClassLoader, protectionDomain as? ProtectionDomain)
 }

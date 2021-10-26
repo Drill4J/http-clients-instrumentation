@@ -15,32 +15,30 @@
  */
 package com.epam.drill.agent.instrument
 
-import kotlinx.atomicfu.*
-
 object ClientsCallback {
 
     private const val DRILL_HEADER_PREFIX = "drill-"
     private const val SESSION_ID_HEADER = "${DRILL_HEADER_PREFIX}session-id"
 
-    private val _requestCallback = atomic<(() -> Map<String, String>)?>(null)
-    private val _responceCallback = atomic<((Map<String, String>) -> Unit)?>(null)
+    private var _requestCallback: (() -> Map<String, String>)? = null
+    private var _responceCallback: ((Map<String, String>) -> Unit)? = null
 
     fun initRequestCallback(callback: () -> Map<String, String>) {
-        _requestCallback.value = callback
+        _requestCallback = callback
     }
 
     fun initResponseCallback(callback: (Map<String, String>) -> Unit) {
-        _responceCallback.value = callback
+        _responceCallback = callback
     }
 
 
-    fun getHeaders(): Map<String, String> = _requestCallback.value?.invoke() ?: emptyMap()
+    fun getHeaders(): Map<String, String> = _requestCallback?.invoke() ?: emptyMap()
 
-    fun storeHeaders(headers: Map<String, String>) = _responceCallback.value?.invoke(headers)
+    fun storeHeaders(headers: Map<String, String>) = _responceCallback?.invoke(headers)
 
-    fun isRequestCallbackSet() = _requestCallback.value != null
+    fun isRequestCallbackSet() = _requestCallback != null
 
-    fun isResponseCallbackSet() = _responceCallback.value != null
+    fun isResponseCallbackSet() = _responceCallback != null
 
     //todo
     fun isSendCondition(): Boolean = getHeaders().run {

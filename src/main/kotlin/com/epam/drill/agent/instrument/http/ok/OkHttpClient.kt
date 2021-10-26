@@ -36,7 +36,7 @@ object OkHttpClient : ITransformer {
         classFileBuffer: ByteArray,
         loader: Any?,
         protectionDomain: Any?,
-    ): ByteArray? = addAndTransform(classFileBuffer, loader, protectionDomain, OkHttpClient::transform)
+    ): ByteArray? = createAndTransform(classFileBuffer, loader, protectionDomain, OkHttpClient::transform)
 
 
     override fun transform(
@@ -81,6 +81,5 @@ object OkHttpClient : ITransformer {
 
         return ctClass.toBytecode()
     }
-
 
 }
