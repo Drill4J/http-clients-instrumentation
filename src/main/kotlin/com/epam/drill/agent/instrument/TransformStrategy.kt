@@ -13,22 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.alibaba.ttl.threadpool.agent.internal.javassist.*
+package com.epam.drill.agent.instrument
+
+import com.epam.drill.agent.instrument.util.*
+import com.epam.drill.logger.*
+import javassist.*
 import org.objectweb.asm.*
 import java.security.*
 
-interface ITransformer {
+abstract class TransformStrategy {
 
-    fun permit(classReader: ClassReader): Boolean
+    protected val logger = Logging.logger { this::class.java.name }
+
+    abstract fun permit(classReader: ClassReader): Boolean
 
     fun transform(
         className: String,
         classFileBuffer: ByteArray,
         loader: Any?,
         protectionDomain: Any?,
-    ): ByteArray?
+    ): ByteArray? = createAndTransform(classFileBuffer, loader, protectionDomain, ::instrument)
 
-    fun transform(
+    abstract fun instrument(
         ctClass: CtClass,
         pool: ClassPool,
         classLoader: ClassLoader?,

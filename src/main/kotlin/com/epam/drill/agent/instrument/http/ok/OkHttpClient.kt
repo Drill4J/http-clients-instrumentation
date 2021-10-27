@@ -15,31 +15,19 @@
  */
 package com.epam.drill.agent.instrument.http.ok
 
-import ITransformer
-import com.alibaba.ttl.threadpool.agent.internal.javassist.*
 import com.epam.drill.agent.instrument.*
 import com.epam.drill.agent.instrument.util.*
-import com.epam.drill.logger.*
+import javassist.*
 import org.objectweb.asm.*
 import java.security.*
 
-object OkHttpClient : ITransformer {
-
-    private val logger = Logging.logger { OkHttpClient::class.qualifiedName }
+open class OkHttpClient : TransformStrategy() {
 
     override fun permit(classReader: ClassReader): Boolean {
         return classReader.interfaces.any { it == "okhttp3/internal/http/HttpCodec" }
     }
 
-    override fun transform(
-        className: String,
-        classFileBuffer: ByteArray,
-        loader: Any?,
-        protectionDomain: Any?,
-    ): ByteArray? = createAndTransform(classFileBuffer, loader, protectionDomain, OkHttpClient::transform)
-
-
-    override fun transform(
+    override fun instrument(
         ctClass: CtClass,
         pool: ClassPool,
         classLoader: ClassLoader?,

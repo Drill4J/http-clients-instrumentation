@@ -15,31 +15,19 @@
  */
 package com.epam.drill.agent.instrument.http.apache
 
-import ITransformer
-import com.alibaba.ttl.threadpool.agent.internal.javassist.*
 import com.epam.drill.agent.instrument.*
 import com.epam.drill.agent.instrument.util.*
-import com.epam.drill.logger.*
+import javassist.*
 import org.objectweb.asm.*
 import java.security.*
 
-object ApacheClient : ITransformer {
-
-    private val logger = Logging.logger { ApacheClient::class.qualifiedName }
+open class ApacheClient : TransformStrategy() {
 
     override fun permit(classReader: ClassReader): Boolean {
         return classReader.interfaces.any { "org/apache/http/HttpClientConnection" == it }
     }
 
-    override fun transform(
-        className: String,
-        classFileBuffer: ByteArray,
-        loader: Any?,
-        protectionDomain: Any?,
-    ): ByteArray? = createAndTransform(classFileBuffer, loader, protectionDomain, ApacheClient::transform)
-
-
-    override fun transform(
+    override fun instrument(
         ctClass: CtClass,
         pool: ClassPool,
         classLoader: ClassLoader?,
@@ -76,4 +64,5 @@ object ApacheClient : ITransformer {
         }
         return ctClass.toBytecode()
     }
+
 }

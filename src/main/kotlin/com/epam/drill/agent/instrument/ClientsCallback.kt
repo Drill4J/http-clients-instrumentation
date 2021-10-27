@@ -40,10 +40,7 @@ object ClientsCallback {
 
     fun isResponseCallbackSet() = _responceCallback != null
 
-    //todo
     fun isSendCondition(): Boolean = getHeaders().run {
-        return isRequestCallbackSet() && isNotEmpty() && get(SESSION_ID_HEADER) != null && any {
-            it.key.startsWith(DRILL_HEADER_PREFIX) && it.key != SESSION_ID_HEADER
-        }
+        return isRequestCallbackSet() && isNotEmpty() && get(SESSION_ID_HEADER) != null
     }
 }

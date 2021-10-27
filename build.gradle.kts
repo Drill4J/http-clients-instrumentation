@@ -11,6 +11,7 @@ val ttlVersion: String by extra
 val drillLoggerVersion: String by extra
 val scriptUrl: String by extra
 val knasmVersion: String by extra
+val javassistVersion: String by extra
 
 apply(from = rootProject.uri("$scriptUrl/git-version.gradle.kts"))
 
@@ -23,7 +24,7 @@ repositories {
 
 
 dependencies {
-    implementation("com.alibaba:transmittable-thread-local:$ttlVersion")
+    implementation("org.javassist:javassist:$javassistVersion")
     implementation("com.epam.drill.logger:logger:$drillLoggerVersion")
     implementation("com.epam.drill.knasm:knasm:$knasmVersion")
 }

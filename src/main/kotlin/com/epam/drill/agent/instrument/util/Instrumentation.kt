@@ -15,7 +15,7 @@
  */
 package com.epam.drill.agent.instrument.util
 
-import com.alibaba.ttl.threadpool.agent.internal.javassist.*
+import javassist.*
 import java.io.*
 import java.security.*
 
