@@ -1,32 +1,91 @@
-import com.hierynomus.gradle.license.tasks.*
+import org.jetbrains.kotlin.gradle.plugin.mpp.*
+import org.jetbrains.kotlin.konan.target.*
 import java.net.*
+import com.hierynomus.gradle.license.tasks.*
 
 plugins {
-    kotlin("jvm")
+    kotlin("multiplatform")
+    id("com.epam.drill.gradle.plugin.kni")
     id("com.github.hierynomus.license")
+    id("com.epam.drill.cross-compilation")
     `maven-publish`
 }
-
-val ttlVersion: String by extra
-val drillLoggerVersion: String by extra
-val scriptUrl: String by extra
-val knasmVersion: String by extra
-val javassistVersion: String by extra
-
-apply(from = rootProject.uri("$scriptUrl/git-version.gradle.kts"))
 
 repositories {
     mavenLocal()
     mavenCentral()
-    apply(from = "$scriptUrl/maven-repo.gradle.kts")
+    maven("https://drill4j.jfrog.io/artifactory/drill")
+    maven(url = "https://oss.jfrog.org/oss-release-local")
 }
 
+val knasmVersion: String by extra
+val javassistVersion: String by extra
+val drillLogger: String by extra
+val kniVersion: String by extra
+val drillJvmApiLibVersion: String by extra
 
+val nativeTargets = mutableSetOf<KotlinNativeTarget>()
 
-dependencies {
-    implementation("org.javassist:javassist:$javassistVersion")
-    implementation("com.epam.drill.logger:logger:$drillLoggerVersion")
-    implementation("com.epam.drill.knasm:knasm:$knasmVersion")
+val kniOutputDir = "src/kni/kotlin"
+
+kotlin {
+    mingwX64()
+    linuxX64()
+    macosX64()
+
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation("com.epam.drill.knasm:knasm:$knasmVersion")
+            }
+        }
+    }
+    crossCompilation {
+        common {
+            defaultSourceSet {
+                dependsOn(sourceSets.named("commonMain").get())
+                dependencies {
+                    implementation("com.epam.drill:jvmapi:$drillJvmApiLibVersion")
+                    implementation("com.epam.drill.logger:logger:$drillLogger")
+                    implementation("com.epam.drill.knasm:knasm:$knasmVersion")
+                    implementation("com.epam.drill.kni:runtime:$kniVersion")
+                    implementation("com.epam.drill:jvmapi:$drillJvmApiLibVersion")
+                }
+            }
+        }
+    }
+
+    kni {
+        jvmTargets = sequenceOf(jvm())
+        additionalJavaClasses = sequenceOf()
+        srcDir = kniOutputDir
+    }
+
+    jvm {
+        compilations["main"].defaultSourceSet {
+            dependencies {
+                implementation("org.javassist:javassist:$javassistVersion")
+                implementation("com.epam.drill.knasm:knasm:$knasmVersion")
+                implementation("com.epam.drill.kni:runtime:$kniVersion")
+                implementation("com.epam.drill.logger:logger:$drillLogger")
+            }
+        }
+    }
+}
+
+tasks {
+    val generateNativeClasses by getting {}
+    withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile> {
+        dependsOn(generateNativeClasses)
+    }
+    val cleanExtraData by registering(Delete::class) {
+        group = "build"
+        delete(kniOutputDir)
+    }
+
+    clean {
+        dependsOn(cleanExtraData)
+    }
 }
 
 val licenseFormatSettings by tasks.registering(LicenseFormat::class) {
@@ -34,26 +93,9 @@ val licenseFormatSettings by tasks.registering(LicenseFormat::class) {
         include("**/*.kt", "**/*.java", "**/*.groovy")
         exclude("**/.idea")
     }.asFileTree
-}
-
-license {
     headerURI = URI("https://raw.githubusercontent.com/Drill4J/drill4j/develop/COPYRIGHT")
 }
 
 tasks["licenseFormat"].dependsOn(licenseFormatSettings)
 
 
-val sourcesJar by tasks.registering(Jar::class) {
-    from(sourceSets.main.get().allSource)
-    archiveClassifier.set("sources")
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("publish-instrumentation") {
-            artifact(tasks.jar.get())
-            artifactId = rootProject.name
-            artifact(sourcesJar.get())
-        }
-    }
-}

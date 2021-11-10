@@ -17,16 +17,26 @@ package com.epam.drill.agent.instrument.http.java
 
 import com.epam.drill.agent.instrument.*
 import com.epam.drill.agent.instrument.util.*
+import com.epam.drill.kni.*
 import javassist.*
 import org.objectweb.asm.*
 import java.security.*
 
-open class JavaHttpUrlConnection : TransformStrategy() {
+@Kni
+actual object JavaHttpUrlConnection : TransformStrategy(),IStrategy {
 
-    override fun permit(classReader: ClassReader): Boolean {
+    actual override fun permit(classReader: ClassReader): Boolean {
         val parentClassName = runCatching { classReader.superName }.getOrDefault("")
         return parentClassName == "java/net/HttpURLConnection" ||
                 parentClassName == "javax/net/ssl/HttpsURLConnection"
+    }
+    actual override fun transform(
+        className: String,
+        classFileBuffer: ByteArray,
+        loader: Any?,
+        protectionDomain: Any?,
+    ): ByteArray? {
+        return super.transform(className, classFileBuffer, loader, protectionDomain)
     }
 
     override fun instrument(

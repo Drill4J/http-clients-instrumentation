@@ -17,14 +17,25 @@ package com.epam.drill.agent.instrument.http.apache
 
 import com.epam.drill.agent.instrument.*
 import com.epam.drill.agent.instrument.util.*
+import com.epam.drill.kni.*
 import javassist.*
 import org.objectweb.asm.*
 import java.security.*
 
-open class ApacheClient : TransformStrategy() {
+@Kni
+actual object ApacheClient : TransformStrategy(), IStrategy {
 
-    override fun permit(classReader: ClassReader): Boolean {
+    actual override fun permit(classReader: ClassReader): Boolean {
         return classReader.interfaces.any { "org/apache/http/HttpClientConnection" == it }
+    }
+
+    actual override fun transform(
+        className: String,
+        classFileBuffer: ByteArray,
+        loader: Any?,
+        protectionDomain: Any?,
+    ): ByteArray? {
+        return super.transform(className, classFileBuffer, loader, protectionDomain)
     }
 
     override fun instrument(
