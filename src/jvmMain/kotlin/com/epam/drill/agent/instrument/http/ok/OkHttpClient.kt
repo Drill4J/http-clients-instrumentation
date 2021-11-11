@@ -17,14 +17,26 @@ package com.epam.drill.agent.instrument.http.ok
 
 import com.epam.drill.agent.instrument.*
 import com.epam.drill.agent.instrument.util.*
+import com.epam.drill.kni.*
 import javassist.*
 import org.objectweb.asm.*
 import java.security.*
 
-open class OkHttpClient : TransformStrategy() {
+@Kni
+actual object OkHttpClient : TransformStrategy(), IStrategy {
 
-    override fun permit(classReader: ClassReader): Boolean {
+    // TODO Waiting for this feature to move this permit to common part https://youtrack.jetbrains.com/issue/KT-20427
+    actual override fun permit(classReader: ClassReader): Boolean {
         return classReader.interfaces.any { it == "okhttp3/internal/http/HttpCodec" }
+    }
+
+    actual override fun transform(
+        className: String,
+        classFileBuffer: ByteArray,
+        loader: Any?,
+        protectionDomain: Any?,
+    ): ByteArray? {
+        return super.transform(className, classFileBuffer, loader, protectionDomain)
     }
 
     override fun instrument(

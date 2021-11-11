@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 - 2022 EPAM Systems
+ * Copyright 2020 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,31 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.epam.drill.agent.instrument
+package com.epam.drill.agent.instrument.http.ok
 
-import com.epam.drill.agent.instrument.util.*
-import com.epam.drill.logger.*
-import javassist.*
+import com.epam.drill.agent.instrument.*
 import org.objectweb.asm.*
-import java.security.*
 
-abstract class TransformStrategy {
+actual object OkHttpClient : IStrategy {
 
-    protected val logger = Logging.logger { this::class.java.name }
+    actual override fun permit(classReader: ClassReader): Boolean {
+        return classReader.interfaces.any { it == "okhttp3/internal/http/HttpCodec" }
+    }
 
-    abstract fun permit(classReader: ClassReader): Boolean
-
-    fun transform(
+    actual override fun transform(
         className: String,
         classFileBuffer: ByteArray,
         loader: Any?,
         protectionDomain: Any?,
-    ): ByteArray? = createAndTransform(classFileBuffer, loader, protectionDomain, ::instrument)
-
-    abstract fun instrument(
-        ctClass: CtClass,
-        pool: ClassPool,
-        classLoader: ClassLoader?,
-        protectionDomain: ProtectionDomain?,
-    ): ByteArray?
+    ): ByteArray? {
+        return OkHttpClientStub.transform(className, classFileBuffer, loader, protectionDomain)
+    }
 }
