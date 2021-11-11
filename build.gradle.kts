@@ -1,32 +1,131 @@
-import com.hierynomus.gradle.license.tasks.*
+import org.jetbrains.kotlin.gradle.plugin.mpp.*
+import org.jetbrains.kotlin.konan.target.*
 import java.net.*
+import com.hierynomus.gradle.license.tasks.*
 
 plugins {
-    kotlin("jvm")
+    kotlin("multiplatform")
+    id("com.epam.drill.gradle.plugin.kni")
     id("com.github.hierynomus.license")
     `maven-publish`
 }
 
-val ttlVersion: String by extra
-val drillLoggerVersion: String by extra
 val scriptUrl: String by extra
-val knasmVersion: String by extra
-val javassistVersion: String by extra
 
 apply(from = rootProject.uri("$scriptUrl/git-version.gradle.kts"))
 
 repositories {
     mavenLocal()
     mavenCentral()
-    apply(from = "$scriptUrl/maven-repo.gradle.kts")
+    apply(from = rootProject.uri("$scriptUrl/maven-repo.gradle.kts"))
 }
 
+val knasmVersion: String by extra
+val javassistVersion: String by extra
+val drillLogger: String by extra
+val kniVersion: String by extra
+val drillJvmApiLibVersion: String by extra
+
+val nativeTargets = mutableSetOf<KotlinNativeTarget>()
+val currentPlatformName = HostManager.host.presetName
+
+kotlin {
+    targets {
+        nativeTargets.addAll(
+            sequenceOf(
+                mingwX64(),
+                linuxX64(),
+                macosX64()
+            )
+        )
+        nativeTargets.forEach { target ->
+            //TODO EPMDJ-8696 remove
+            if (currentPlatformName == target.name) {
+                target.compilations["main"].setCommonSources()
+            }
+        }
+
+        jvm {
+            compilations["main"].defaultSourceSet {
+                dependencies {
+                    //TODO Compile only ?
+                    implementation("org.javassist:javassist:$javassistVersion")
+                    implementation("com.epam.drill.knasm:knasm:$knasmVersion")
+                    implementation("com.epam.drill.kni:runtime:$kniVersion")
+                }
+            }
+        }
+    }
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation("com.epam.drill.knasm:knasm:$knasmVersion")
+                implementation("com.epam.drill.logger:logger:$drillLogger") {
+                    //TODO EPMDJ-8703 exclude in logger
+                    exclude("org.slf4j")
+                }
+            }
+        }
+        //TODO EPMDJ-8696 Rename to commonNative
+        val commonNativeDependenciesOnly by creating {
+            dependsOn(commonMain)
+            dependencies {
+                implementation("com.epam.drill:jvmapi:$drillJvmApiLibVersion")
+                implementation("com.epam.drill.logger:logger:$drillLogger")
+                implementation("com.epam.drill.knasm:knasm:$knasmVersion")
+                implementation("com.epam.drill.kni:runtime:$kniVersion")
+            }
+        }
+
+        val linuxX64Main by getting {
+            dependsOn(commonNativeDependenciesOnly)
+        }
+        val mingwX64Main by getting {
+            dependsOn(commonNativeDependenciesOnly)
+        }
+        val macosX64Main by getting {
+            dependsOn(commonNativeDependenciesOnly)
+        }
 
 
-dependencies {
-    implementation("org.javassist:javassist:$javassistVersion")
-    implementation("com.epam.drill.logger:logger:$drillLoggerVersion")
-    implementation("com.epam.drill.knasm:knasm:$knasmVersion")
+    }
+    kni {
+        jvmTargets = sequenceOf(jvm())
+        additionalJavaClasses = sequenceOf()
+        nativeCrossCompileTarget = nativeTargets.asSequence()
+        excludedClasses = sequenceOf("com.epam.drill.logger.NativeApi")
+    }
+}
+
+tasks {
+    val generateNativeClasses by getting {}
+    //TODO EPMDJ-8696 remove copy
+    val copy = nativeTargets.filter { it.name != currentPlatformName }.map {
+        register<Copy>("copy for ${it.name}") {
+            from(file("src/commonNative/kotlin"))
+            into(file("src/${it.name}Main/kotlin/gen"))
+        }
+    }
+    val copyCommon by registering(DefaultTask::class) {
+        group = "build"
+        copy.forEach { dependsOn(it) }
+    }
+
+    withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile> {
+        dependsOn(copyCommon)
+        dependsOn(generateNativeClasses)
+    }
+    val cleanExtraData by registering(Delete::class) {
+        group = "build"
+        nativeTargets.forEach {
+            val path = "src/${it.name}Main/kotlin/"
+            delete(file("${path}kni"), file("${path}gen"))
+        }
+    }
+
+    clean {
+        dependsOn(cleanExtraData)
+    }
 }
 
 val licenseFormatSettings by tasks.registering(LicenseFormat::class) {
@@ -34,26 +133,16 @@ val licenseFormatSettings by tasks.registering(LicenseFormat::class) {
         include("**/*.kt", "**/*.java", "**/*.groovy")
         exclude("**/.idea")
     }.asFileTree
-}
-
-license {
     headerURI = URI("https://raw.githubusercontent.com/Drill4J/drill4j/develop/COPYRIGHT")
 }
 
 tasks["licenseFormat"].dependsOn(licenseFormatSettings)
 
-
-val sourcesJar by tasks.registering(Jar::class) {
-    from(sourceSets.main.get().allSource)
-    archiveClassifier.set("sources")
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("publish-instrumentation") {
-            artifact(tasks.jar.get())
-            artifactId = rootProject.name
-            artifact(sourcesJar.get())
-        }
+//TODO EPMDJ-8696 remove
+fun KotlinNativeCompilation.setCommonSources(modulePath: String = "src/commonNative") {
+    defaultSourceSet {
+        kotlin.srcDir(file("${modulePath}/kotlin"))
+        resources.setSrcDirs(listOf("${modulePath}/resources"))
     }
 }
+
