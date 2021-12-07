@@ -22,6 +22,7 @@ object ClientsCallback {
 
     private var _requestCallback: (() -> Map<String, String>)? = null
     private var _responceCallback: ((Map<String, String>) -> Unit)? = null
+    private var _sendConditionCallback: (() -> Boolean)? = null
 
     fun initRequestCallback(callback: () -> Map<String, String>) {
         _requestCallback = callback
@@ -31,6 +32,9 @@ object ClientsCallback {
         _responceCallback = callback
     }
 
+    fun initSendConditionCallback(callback: () -> Boolean) {
+        _sendConditionCallback = callback
+    }
 
     fun getHeaders(): Map<String, String> = _requestCallback?.invoke() ?: emptyMap()
 
@@ -40,7 +44,10 @@ object ClientsCallback {
 
     fun isResponseCallbackSet() = _responceCallback != null
 
-    fun isSendCondition(): Boolean = getHeaders().run {
-        return isRequestCallbackSet() && isNotEmpty() && get(SESSION_ID_HEADER) != null
+    fun isSendConditionCallbackSet() = _sendConditionCallback != null
+
+    fun isSendCondition(): Boolean = _sendConditionCallback?.invoke() ?: getHeaders().run {
+        isRequestCallbackSet() && isNotEmpty() && get(SESSION_ID_HEADER) != null
     }
+
 }
