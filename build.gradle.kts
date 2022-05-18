@@ -8,6 +8,7 @@ plugins {
     id("com.epam.drill.gradle.plugin.kni")
     id("com.github.hierynomus.license")
     `maven-publish`
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
 }
 
 val scriptUrl: String by extra
